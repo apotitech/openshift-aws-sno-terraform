@@ -1,191 +1,61 @@
-resource "aws_security_group" "controlPlane_sg" {
-  name        = "${var.cluster_name}-controlPlane-sg"
-  description = "Security group for handling the communication with the control plane nodes"
-  vpc_id      = aws_vpc.vpc.id
+resource "aws_security_group" "openshift_sno_sg" {
+  name        = "${var.cluster_name}-openshift-sno-sg"
+  description = "Security group for OpenShift SNO node encompassing both control plane and worker functionalities"
+  vpc_id      =  aws_vpc.vpc.id
 
-  tags = merge(
-    {
-      "Name" = "${var.cluster_name}-controlPlane-sg"
-    },
-    var.tags
-  )
-}
+  tags = {
+    "Name" = "${var.cluster_name}-openshift-sno-sg"
+  }
 
-resource "aws_security_group_rule" "controlPlane_egress" {
-  type              = "egress"
-  from_port         = "0"
-  to_port           = "0"
-  protocol          = "all"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.controlPlane_sg.id
-}
+  # Egress rule to allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1" # -1 represents all protocols
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_services" {
-  type              = "ingress"
-  from_port         = "22623"
-  to_port           = "22623"
-  protocol          = "TCP"
-  cidr_blocks       = [aws_vpc.vpc.cidr_block]
-  security_group_id = aws_security_group.controlPlane_sg.id
-}
+  # Ingress rule for OpenShift API server
+  ingress {
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.vpc.cidr_block]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_api" {
-  type              = "ingress"
-  from_port         = "6443"
-  to_port           = "6443"
-  protocol          = "TCP"
-  cidr_blocks       = [aws_vpc.vpc.cidr_block]
-  security_group_id = aws_security_group.controlPlane_sg.id
-}
+  # Ingress rule for SSH access
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] #[aws_ec2.bootstrap.public_ip, aws_ec2.bootstrap.private_ip]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_ssh_worker" {
-  type              = "ingress"
-  from_port         = "22"
-  to_port           = "22"
-  protocol          = "TCP"
-  cidr_blocks       = [aws_vpc.vpc.cidr_block]
-  security_group_id = aws_security_group.controlPlane_sg.id
-}
+  # Ingress for NodePort services range
+  ingress {
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.vpc.cidr_block]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_etcd" {
-  type              = "ingress"
-  from_port         = "2379"
-  to_port           = "2380"
-  protocol          = "TCP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_etcd_worker" {
-  type                     = "ingress"
-  from_port                = "2379"
-  to_port                  = "2380"
-  protocol                 = "TCP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-resource "aws_security_group_rule" "controlPlane_ingress_HLS" {
-  type              = "ingress"
-  from_port         = "9000"
-  to_port           = "9999"
-  protocol          = "TCP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_HLS_worker" {
-  type                     = "ingress"
-  from_port                = "9000"
-  to_port                  = "9999"
-  protocol                 = "TCP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_k8s" {
-  type              = "ingress"
-  from_port         = "10249"
-  to_port           = "10259"
-  protocol          = "TCP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_k8s_worker" {
-  type                     = "ingress"
-  from_port                = "10249"
-  to_port                  = "10259"
-  protocol                 = "TCP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_openshift_sdn" {
-  type              = "ingress"
-  from_port         = "10256"
-  to_port           = "10256"
-  protocol          = "TCP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_openshift_sdn_worker" {
-  type                     = "ingress"
-  from_port                = "10256"
-  to_port                  = "10256"
-  protocol                 = "TCP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_vxlan_geneve" {
-  type              = "ingress"
-  from_port         = "4789"
-  to_port           = "4789"
-  protocol          = "UDP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_vxlan_geneve_worker" {
-  type                     = "ingress"
-  from_port                = "4789"
-  to_port                  = "4789"
-  protocol                 = "UDP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_vxlan_geneve_2" {
-  type              = "ingress"
-  from_port         = "6081"
-  to_port           = "6081"
-  protocol          = "UDP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_vxlan_geneve_2_worker" {
-  type                     = "ingress"
-  from_port                = "6081"
-  to_port                  = "6081"
-  protocol                 = "UDP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_HLS_UDP" {
-  type              = "ingress"
-  from_port         = "9000"
-  to_port           = "9999"
-  protocol          = "UDP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_HLS_UDP_worker" {
-  type                     = "ingress"
-  from_port                = "9000"
-  to_port                  = "9999"
-  protocol                 = "UDP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
-}
-resource "aws_security_group_rule" "controlPlane_ingress_k8s_nodePort" {
-  type              = "ingress"
-  from_port         = "30000"
-  to_port           = "32767"
-  protocol          = "UDP"
-  security_group_id = aws_security_group.controlPlane_sg.id
-  self              = true
-}
-
-resource "aws_security_group_rule" "controlPlane_ingress_k8s_nodePort_worker" {
-  type                     = "ingress"
-  from_port                = "30000"
-  to_port                  = "32767"
-  protocol                 = "UDP"
-  security_group_id        = aws_security_group.controlPlane_sg.id
-  source_security_group_id = aws_security_group.worker_sg.id
+tags_all = {
+    "Name" = "${var.cluster_name}-openshift-sno-sg"
+  }
+  # Additional ingress rules for other necessary services can be added here
+  # Example: Metrics, logging, or application-specific ports
 }

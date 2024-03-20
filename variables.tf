@@ -68,7 +68,7 @@ variable "vpc_cidr_block" {
 // availability zones must be defined as lower case
 variable "availability_zones" {
   type    = list(string)
-  default = ["a", "b", "c"]
+  default = ["a"]
 }
 
 resource "random_string" "random" {
@@ -94,4 +94,10 @@ variable "base_domain" {
 variable "os" {
   type = string
   default = "Windows"
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to the SSH public key used for the OpenShift installation"
+  type        = string
+  default     =  ""
 }

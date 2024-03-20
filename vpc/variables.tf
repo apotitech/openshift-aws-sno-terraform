@@ -27,3 +27,11 @@ variable "private_subnets" {
 variable "region" {
   type = string
 }
+
+# variable "ec2_private_ip" {
+#   type = string
+# }
+
+# variable "ec2_public_ip" {
+#   type = string
+# }

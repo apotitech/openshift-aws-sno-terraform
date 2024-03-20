@@ -32,3 +32,12 @@ variable "region" {
 variable "domain" {
   type = string
 }
+
+variable "openshift_sno_sg" {
+  type = string
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to the SSH public key used for the OpenShift installation"
+  type        = string
+}
