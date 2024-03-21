@@ -32,21 +32,21 @@ variable "amis" {
 variable "control_plane" {
   type = map(string)
   default = {
-    "instance_type" = "m4.large"
+    "instance_type" = "m6a.2xlarge"
   }
 }
 
 variable "worker" {
   type = map(string)
   default = {
-    "instance_type" = "m4.large"
+    "instance_type" = "m6a.2xlarge"
   }
 }
 
 variable "bootstrap" {
   type = map(string)
   default = {
-    "instance_type" = "i3.large"
+    "instance_type" = "m6a.2xlarge"
   }
 }
 
