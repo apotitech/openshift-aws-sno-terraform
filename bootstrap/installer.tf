@@ -69,12 +69,12 @@ compute:
 - hyperthreading: Enabled
   name: worker
   platform: {}
-  replicas: 3
+  replicas: 0
 controlPlane:
   hyperthreading: Enabled
   name: master
   platform: {}
-  replicas: 3
+  replicas: 1
 metadata:
   name: ${var.cluster_name}
 networking:
